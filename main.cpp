@@ -1135,7 +1135,7 @@ void choose_first_zoom(long long *file_bbox, std::vector<struct reader> &readers
 	}
 }
 
-int read_input(std::vector<source> &sources, char *fname, int maxzoom, int minzoom, int basezoom, double basezoom_marker_width, sqlite3 *outdb, const char *outdir, std::set<std::string> *exclude, std::set<std::string> *include, int exclude_all, json_object *filter, double droprate, int buffer, const char *tmpdir, double gamma, int read_parallel, int forcetable, const char *attribution, bool uses_gamma, long long *file_bbox, const char *prefilter, const char *postfilter, const char *description, bool guess_maxzoom, std::map<std::string, int> const *attribute_types, const char *pgm, std::map<std::string, attribute_op> const *attribute_accum, std::map<std::string, std::string> const &attribute_descriptions, std::string const &commandline) {
+int read_input(std::vector<source> &sources, char *fname, int maxzoom, int minzoom, int basezoom, double basezoom_marker_width, sqlite3 *outdb, const char *outdir, bool outstdout, std::set<std::string> *exclude, std::set<std::string> *include, int exclude_all, json_object *filter, double droprate, int buffer, const char *tmpdir, double gamma, int read_parallel, int forcetable, const char *attribution, bool uses_gamma, long long *file_bbox, const char *prefilter, const char *postfilter, const char *description, bool guess_maxzoom, std::map<std::string, int> const *attribute_types, const char *pgm, std::map<std::string, attribute_op> const *attribute_accum, std::map<std::string, std::string> const &attribute_descriptions, std::string const &commandline) {
 	int ret = EXIT_SUCCESS;
 
 	std::vector<struct reader> readers;
@@ -2267,7 +2267,7 @@ int read_input(std::vector<source> &sources, char *fname, int maxzoom, int minzo
 
 	std::atomic<unsigned> midx(0);
 	std::atomic<unsigned> midy(0);
-	int written = traverse_zooms(fd, size, meta, stringpool, &midx, &midy, maxzoom, minzoom, outdb, outdir, buffer, fname, tmpdir, gamma, full_detail, low_detail, min_detail, meta_off, pool_off, initial_x, initial_y, simplification, layermaps, prefilter, postfilter, attribute_accum, filter);
+	int written = traverse_zooms(fd, size, meta, stringpool, &midx, &midy, maxzoom, minzoom, outdb, outdir, outstdout, buffer, fname, tmpdir, gamma, full_detail, low_detail, min_detail, meta_off, pool_off, initial_x, initial_y, simplification, layermaps, prefilter, postfilter, attribute_accum, filter);
 
 	if (maxzoom != written) {
 		if (written > minzoom) {
@@ -2462,6 +2462,7 @@ int main(int argc, char **argv) {
 	char *layername = NULL;
 	char *out_mbtiles = NULL;
 	char *out_dir = NULL;
+	bool out_stdout = false;
 	sqlite3 *outdb = NULL;
 	int maxzoom = 14;
 	int minzoom = 0;
@@ -2497,6 +2498,7 @@ int main(int argc, char **argv) {
 		{"Output tileset", 0, 0, 0},
 		{"output", required_argument, 0, 'o'},
 		{"output-to-directory", required_argument, 0, 'e'},
+		{"output-to-stdout", no_argument, 0, 'u'},
 		{"force", no_argument, 0, 'f'},
 		{"allow-existing", no_argument, 0, 'F'},
 
@@ -2842,6 +2844,12 @@ int main(int argc, char **argv) {
 			out_dir = optarg;
 			break;
 
+		case 'u':
+			//out_mbtiles = NULL;
+			//out_dir = NULL;
+			out_stdout = true;
+			break;
+
 		case 'x':
 			exclude.insert(std::string(optarg));
 			break;
@@ -3135,8 +3143,8 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "Forcing -g0 since -B or -r is not known\n");
 	}
 
-	if (out_mbtiles == NULL && out_dir == NULL) {
-		fprintf(stderr, "%s: must specify -o out.mbtiles or -e directory\n", argv[0]);
+	if (out_mbtiles == NULL && out_dir == NULL && !out_stdout) {
+		fprintf(stderr, "%s: must specify -o out.mbtiles or -e directory or -u\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 
@@ -3180,7 +3188,7 @@ int main(int argc, char **argv) {
 
 	long long file_bbox[4] = {UINT_MAX, UINT_MAX, 0, 0};
 
-	ret = read_input(sources, name ? name : out_mbtiles ? out_mbtiles : out_dir, maxzoom, minzoom, basezoom, basezoom_marker_width, outdb, out_dir, &exclude, &include, exclude_all, filter, droprate, buffer, tmpdir, gamma, read_parallel, forcetable, attribution, gamma != 0, file_bbox, prefilter, postfilter, description, guess_maxzoom, &attribute_types, argv[0], &attribute_accum, attribute_descriptions, commandline);
+	ret = read_input(sources, name ? name : out_mbtiles ? out_mbtiles : out_dir, maxzoom, minzoom, basezoom, basezoom_marker_width, outdb, out_dir, out_stdout, &exclude, &include, exclude_all, filter, droprate, buffer, tmpdir, gamma, read_parallel, forcetable, attribution, gamma != 0, file_bbox, prefilter, postfilter, description, guess_maxzoom, &attribute_types, argv[0], &attribute_accum, attribute_descriptions, commandline);
 
 	if (outdb != NULL) {
 		mbtiles_close(outdb, argv[0]);
