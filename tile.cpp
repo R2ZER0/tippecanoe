@@ -2534,7 +2534,7 @@ long long write_tile(FILE *geoms, std::atomic<long long> *geompos_in, char *meta
 					} else if (outdir != NULL) {
 						dir_write_tile(outdir, z, tx, ty, compressed);
 					} else if(outstdout) {
-						stdout_json_write_tile(z, tx, tx, compressed.data(), compressed.size());
+						stdout_json_write_tile(z, tx, ty, compressed.data(), compressed.size());
 					}
 
 					if (pthread_mutex_unlock(&db_lock) != 0) {
