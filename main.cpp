@@ -1254,14 +1254,20 @@ int read_input(std::vector<source> &sources, char *fname, int maxzoom, int minzo
 				src = sources[l].file.c_str();
 			}
 
-			// Find the last component of the pathname
-			const char *ocp, *use = src;
-			for (ocp = src; *ocp; ocp++) {
-				if (*ocp == '/' && ocp[1] != '\0') {
-					use = ocp + 1;
+			std::string trunc;
+			if(src != NULL) {
+				// Find the last component of the pathname
+				const char *ocp, *use = src;
+				for (ocp = src; *ocp; ocp++) {
+					if (*ocp == '/' && ocp[1] != '\0') {
+						use = ocp + 1;
+					}
 				}
+				trunc = std::string(use);
+			} else {
+				trunc = std::string("");
 			}
-			std::string trunc = std::string(use);
+			
 
 			std::vector<std::string> trim = {
 				".json",
